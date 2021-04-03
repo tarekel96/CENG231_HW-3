@@ -4,6 +4,7 @@
 #include <sys/types.h> // fd_set type
 #include <sys/time.h> // timeval struct
 #include <sys/select.h> // select()
+#include <termios.h>
 
 #define PASSWORD_LEN 8
 
@@ -34,7 +35,15 @@ int main(int argv, char ** argc){
 	
 	// declare vars
 	char password[PASSWORD_LEN + 1]; // array of chars where pw is stored
-	const unsigned int MAX_TIME_SECONDS = 10; // amt of time user has to input a pw
+	const unsigned int MAX_TIME_SECONDS = 60; // amt of time user has to input a pw
+	struct termios originalTermios, newTermios;
+	
+	
+	tcgetattr(fileno(stdin), &originalTermios); // fetch stdin from termios
+	newTermios = originalTermios; // save original terminal settings
+	newTermios.c_lflag &= ~ECHO; //mask stdin
+	newTermios.c_lflag &= ~ICANON; //mask stdin
+	tcsetattr(STDIN_FILENO, TCSANOW, &newTermios); // assign stdin from new termios
 	
 	// prompt user for pw
 	printf("Enter a password\n");
@@ -51,6 +60,7 @@ int main(int argv, char ** argc){
 		
 		// retrieve password from stdin
 		char* nget = fgets(password, PASSWORD_LEN, stdin);
+		tcsetattr(STDIN_FILENO, TCSANOW, &originalTermios);
 		
 		// error handling if input was not successfully captured
 		if(nget == NULL){
